@@ -1,13 +1,9 @@
 <script lang="ts" setup>
 /* eslint-disable @typescript-eslint/naming-convention */
-import hljs from 'highlight.js/lib/core';
-import bash from 'highlight.js/lib/languages/bash';
-import javascript from 'highlight.js/lib/languages/javascript';
-import python from 'highlight.js/lib/languages/python';
-import typescript from 'highlight.js/lib/languages/typescript';
-import xml from 'highlight.js/lib/languages/xml';
+
 import type MarkdownIt from 'markdown-it';
 import markdownLink from 'markdown-it-link-attributes';
+
 import { computed, ref, toRefs, onMounted } from 'vue';
 import VueMarkdown from 'vue-markdown-render';
 
@@ -16,15 +12,7 @@ import type { ChatMessage, ChatMessageText } from '@n8n/chat/types';
 
 import ChatFile from './ChatFile.vue';
 
-const props = defineProps<{
-	message: ChatMessage;
-}>();
-
-hljs.registerLanguage('javascript', javascript);
-hljs.registerLanguage('typescript', typescript);
-hljs.registerLanguage('python', python);
-hljs.registerLanguage('xml', xml);
-hljs.registerLanguage('bash', bash);
+const props = defineProps<{ message: ChatMessage }>();
 
 defineSlots<{
 	beforeMessage(props: { message: ChatMessage }): ChatMessage;
@@ -33,6 +21,7 @@ defineSlots<{
 
 const { message } = toRefs(props);
 const { options } = useOptions();
+
 const messageContainer = ref<HTMLElement | null>(null);
 const fileSources = ref<Record<string, string>>({});
 
@@ -59,23 +48,11 @@ const linksNewTabPlugin = (vueMarkdownItInstance: MarkdownIt) => {
 
 const scrollToView = () => {
 	if (messageContainer.value?.scrollIntoView) {
-		messageContainer.value.scrollIntoView({
-			block: 'start',
-		});
+		messageContainer.value.scrollIntoView({ block: 'start' });
 	}
 };
 
-const markdownOptions = {
-	highlight(str: string, lang: string) {
-		if (lang && hljs.getLanguage(lang)) {
-			try {
-				return hljs.highlight(str, { language: lang }).value;
-			} catch {}
-		}
-
-		return ''; // use external default escaping
-	},
-};
+const markdownOptions = {}; // Disabled highlight for build performance
 
 const messageComponents = { ...(options?.messageComponents ?? {}) };
 
@@ -108,10 +85,12 @@ onMounted(async () => {
 		<div v-if="$slots.beforeMessage?.({ message })" class="chat-message-actions">
 			<slot name="beforeMessage" v-bind="{ message }" />
 		</div>
+
 		<slot>
 			<template v-if="message.type === 'component' && messageComponents[message.key]">
 				<component :is="messageComponents[message.key]" v-bind="message.arguments" />
 			</template>
+
 			<VueMarkdown
 				v-else
 				class="chat-message-markdown"
@@ -119,6 +98,7 @@ onMounted(async () => {
 				:options="markdownOptions"
 				:plugins="[linksNewTabPlugin]"
 			/>
+
 			<div v-if="(message.files ?? []).length > 0" class="chat-message-files">
 				<div v-for="file in message.files ?? []" :key="file.name" class="chat-message-file">
 					<ChatFile :file="file" :is-removable="false" :is-previewable="true" />
@@ -164,12 +144,10 @@ onMounted(async () => {
 		word-wrap: break-word;
 	}
 
-	// Default message gap is half of the spacing
 	+ .chat-message {
 		margin-top: var(--chat--message--margin-bottom);
 	}
 
-	// Spacing between messages from different senders is double the individual message gap
 	&.chat-message-from-user + &.chat-message-from-bot,
 	&.chat-message-from-bot + &.chat-message-from-user {
 		margin-top: var(--chat--spacing);
@@ -217,6 +195,7 @@ onMounted(async () => {
 			border-radius: var(--chat--border-radius);
 		}
 	}
+
 	.chat-message-files {
 		display: flex;
 		flex-wrap: wrap;
